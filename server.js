@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import User from './models/User.js';
 import bcrypt from 'bcrypt';
 import cors from 'cors';
+import jwt from 'jsonwebtoken';
 
 await mongoose.connect('mongodb://127.0.0.1:27017/auth', 
 {useNewUrlParser:true, useUnifiedTopology: true});
@@ -12,6 +13,7 @@ const db = mongoose.connection;
 db.on('error', console.log);
 
 const app = express();
+const secret = "Mohan123";
 
 const corsOptions = {
     origin: 'http://localhost:3000',
@@ -34,7 +36,14 @@ app.post('/register', (req, res)=>{
         password : hashedPassword
     });
     user.save().then(userInfo => {
-        console.log(userInfo);
+        jwt.sign({id : userInfo._id, email : userInfo.email}, secret, (err, token)=>{
+            if(err){
+                console.log(err);
+                res.send(500);
+            }else{
+                res.cookie('token', token).json({id : userInfo._id, email : userInfo.email});
+            }
+        })
     })
 });
 
