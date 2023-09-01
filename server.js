@@ -28,6 +28,14 @@ app.get('/',(req, res)=>{
     res.send('Ok');
 });
 
+app.get('/user', (req, res)=>{
+    const payload = jwt.verify(req.cookies.token, secret);
+    User.findById(payload.id)
+        .then(userInfo =>{
+            res.json({id:userInfo._id, email:userInfo.email});
+        })
+});
+
 app.post('/register', (req, res)=>{
     const {email, password} = req.body;
     const hashedPassword = bcrypt.hashSync(password,10);
@@ -45,6 +53,30 @@ app.post('/register', (req, res)=>{
             }
         })
     })
+});
+app.post('/login', (req, res)=>{
+    const {email, password} = req.body;
+    User.findOne({email})
+    .then(userInfo=>{
+        const passed = bcrypt.compareSync(password, userInfo.password);
+        if(passed){
+            jwt.sign({id:userInfo._id, email}, secret, (err, token)=>{
+                if(err){
+                    console.log(err);
+                    res.send(500);
+                }else{
+                    res.cookie('token', token).json({id : userInfo._id, email : userInfo.email});
+                }
+            })
+        }
+        else{
+            res.send(401);
+        }
+    })
+});
+
+app.post('/logout', (req, res)=>{
+    res.cookie('token', '').send();
 });
 
 const port = 4000;
